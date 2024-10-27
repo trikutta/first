@@ -1,0 +1,168 @@
+# Importing pygame module
+import pygame
+from pygame import Surface
+from bs4 import BeautifulSoup, Tag
+from flask import Flask, jsonify, request, send_file, Response, render_template, make_response, url_for, session
+from PIL import Image
+from typing import List, Dict, Tuple, NamedTuple, TypeVar, Generic, Optional, Callable
+
+def ratio(val:int, mul:int|float=1, div:int|float=1) -> int:
+    return int((val * mul) / div)
+class Color:
+    BLACK = (0, 0, 0)
+    DARK_GREY = (25, 25, 25)
+    LIGHT_GREY = (75, 75, 75)
+    WHITE = (255, 255, 255)
+    BLUE = (0, 0, 255)
+    SEMI_BLUE = (92, 144, 189)
+    SEMI_ORANGE = (204, 154, 84)
+class Dimension:
+    def __init__(self, width:int, height:int):
+        self.width = width
+        self.height = height
+    @classmethod
+    def new(cls, pair:Tuple[int, int]) -> "Dimension":
+        return Dimension(width=pair[0], height=pair[1])
+    def get(self) -> Tuple[int, int]:
+        return self.width, self.height
+    def ratio_width(self, mul:int|float=1, div:int|float=1) -> int:
+        return ratio(val=self.width, mul=mul, div=div)
+    def ratio_height(self, mul:int|float=1, div:int|float=1) -> int:
+        return ratio(val=self.height, mul=mul, div=div)
+class Position:
+    def __init__(self, x:int, y:int):
+        self.x = x
+        self.y = y
+    @classmethod
+    def new(cls, pair:Tuple[int, int]) -> "Position":
+        return Position(x=pair[0], y=pair[1])
+    def get(self) -> Tuple[int, int]:
+        return self.x, self.y
+    def ratio_x(self, mul:int|float=1, div:int|float=1) -> int:
+        return ratio(val=self.x, mul=mul, div=div)
+    def ratio_y(self, mul:int|float=1, div:int|float=1) -> int:
+        return ratio(val=self.y, mul=mul, div=div)
+class Player(pygame.sprite.Sprite):
+    def __init__(self, window:Surface, name:str, position:Position):
+        super().__init__()
+        self.window = window
+        self.name = name
+        self.position = position
+    def update(self):
+        # if not self.game_area.contains(self.rect): self.kill()
+        return
+class Court(pygame.sprite.Sprite):
+    def __init__(self, window:Surface, color:Color=Color.LIGHT_GREY, border_width:int=1, border_radius:int=0, marking_width:int=1, marking_radius:int=0):
+        super().__init__()
+        self.window = window
+        self.color = color
+        self.border_width = border_width
+        self.border_radius = border_radius
+        self.marking_width = marking_width
+        self.marking_radius = marking_radius
+        self.screen_size = Dimension.new(pair=self.window.get_size())
+        self.top = self.screen_size.ratio_height(mul=1, div=11)
+        self.bottom = self.screen_size.ratio_height(mul=10, div=11)
+        self.height = self.bottom - self.top
+        # self.width = ratio(val=self.height, mul=0.531914893617)
+        self.width = ratio(val=self.height, mul=0.631914893617)
+        self.left = self.screen_size.ratio_width(div=2) - ratio(val=self.width, div=2)
+        self.right = self.screen_size.ratio_width(div=2) + ratio(val=self.width, div=2)
+        self.position = Position(x=self.left, y=self.top)
+        self.dimension = Dimension(width=self.width, height=self.height)
+        self.rect = [*self.position.get(), *self.dimension.get()]
+        print(f"height={self.height}")
+        print(f"width={self.width}")
+        print(f"calc width={self.right - self.left}")
+    def draw_court(self):
+        self.rect = [*self.position.get(), *self.dimension.get()]
+        pygame.draw.rect(surface=self.window, color=self.color, rect=self.rect, width=self.border_width, border_radius=self.border_radius)
+        return
+    def draw_mid_line(self):
+        half_height = self.top + self.dimension.ratio_height(div=2)
+        mid_line_start_position = Position(x=self.left, y=half_height)
+        mid_line_end_position = Position(x=self.right, y=half_height)
+        pygame.draw.line(surface=self.window, color=self.color, start_pos=mid_line_start_position.get(), end_pos=mid_line_end_position.get(), width=self.marking_width)
+        return
+    def draw_box(self, box_width:int, box_height:int, box_y:int):
+        box_left = self.dimension.ratio_width(div=2) - ratio(val=box_width, div=2) + self.left
+        box_position = Position(x=box_left, y=box_y)
+        box_dimension = Dimension(width=box_width, height=box_height)
+        box_rect = [*box_position.get(), *box_dimension.get()]
+        pygame.draw.rect(surface=self.window, color=self.color, rect=box_rect, width=self.marking_width, border_radius=self.marking_radius)
+        return
+    def draw_boxes(self):
+        outer_width = self.dimension.ratio_width(mul=16, div=50)
+        inner_width = self.dimension.ratio_width(mul=12, div=50)
+        box_height = self.dimension.ratio_height(mul=19, div=94)
+        self.draw_box(box_width=outer_width, box_height=box_height, box_y=self.top)
+        self.draw_box(box_width=inner_width, box_height=box_height, box_y=self.top)
+        self.draw_box(box_width=outer_width, box_height=box_height, box_y=self.bottom - box_height)
+        self.draw_box(box_width=inner_width, box_height=box_height, box_y=self.bottom - box_height)
+        return
+    def draw_center_circle(self, mul:int=1, div:int=1):
+        circle_radius = self.dimension.ratio_width(mul=mul, div=div)
+        circle_position = Position(x=self.left + self.dimension.ratio_width(div=2), y=self.top + self.dimension.ratio_height(div=2))
+        pygame.draw.circle(surface=self.window, color=self.color, center=circle_position.get(), radius=circle_radius, width=self.marking_width)
+        return
+    def draw_inner_center_circle(self):
+        return self.draw_center_circle(mul=2, div=50)
+    def draw_outer_center_circle(self):
+        return self.draw_center_circle(mul=6, div=50)
+    def draw_center_circles(self):
+        self.draw_inner_center_circle()
+        self.draw_outer_center_circle()
+        return
+    def draw_basket(self, basket_radius:int, basket_y:int):
+        basket_position = Position(x=self.left + self.dimension.ratio_width(div=2), y=basket_y + basket_radius)
+        pygame.draw.circle(surface=self.window, color=self.color, center=basket_position.get(), radius=basket_radius, width=self.marking_width)
+        return
+    def draw_baskets(self):
+        basket_radius = self.dimension.ratio_width(mul=1.5, div=50)
+        basket_diameter = basket_radius * 2
+        self.draw_basket(basket_radius=basket_radius, basket_y=self.top)
+        self.draw_basket(basket_radius=basket_radius, basket_y=self.bottom - basket_diameter)
+        return
+    def update(self):
+        # if not self.game_area.contains(self.rect): self.kill()
+        self.draw_court()
+        self.draw_mid_line()
+        self.draw_boxes()
+        self.draw_center_circles()
+        self.draw_baskets()
+        return
+class BasketBallTrialGame:
+    SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
+    SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
+    def __init__(self):
+        pygame.init()
+        pygame.display.set_caption('Basketball Trial')
+        self.timer = pygame.time.Clock()
+        self.window:Surface = pygame.display.set_mode(self.SCREEN_SIZE)
+        self.game_running = True
+    def run_game(self):
+        court = Court(window=self.window)
+        all_sprites = [court]
+        while self.game_running:
+            self.window.fill(Color.DARK_GREY)
+            [x.update() for x in all_sprites]
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.game_running = False
+            pygame.display.update()
+            self.timer.tick(90)
+        return
+def execute():
+    basketball_trial = BasketBallTrialGame()
+    basketball_trial.run_game()
+    return
+def main():
+    execute()
+    return
+if __name__ == "__main__":
+    main()
+
+
+
+
+
