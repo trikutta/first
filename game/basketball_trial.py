@@ -12,6 +12,9 @@ from typing import List, Dict, Tuple, NamedTuple, TypeVar, Generic, Optional, Ca
 ### ##### ###
 def ratio(val:int, mul:int|float=1, div:int|float=1) -> int:
     return int((val * mul) / div)
+### ####### ###
+### CLASSES ###
+### ####### ###
 class Color:
     BLACK = (0, 0, 0)
     DARK_GREY = (25, 25, 25)
