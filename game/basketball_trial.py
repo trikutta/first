@@ -7,6 +7,9 @@ from PIL import Image
 from pydantic import BaseModel
 from typing import List, Dict, Tuple, NamedTuple, TypeVar, Generic, Optional, Callable
 
+### ##### ###
+### UTILS ###
+### ##### ###
 def ratio(val:int, mul:int|float=1, div:int|float=1) -> int:
     return int((val * mul) / div)
 class Color:
