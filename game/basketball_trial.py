@@ -74,8 +74,8 @@ class Court(pygame.sprite.Sprite):
         self.marking_style = marking_style
         self.basket_style = basket_style
         self.screen_size = Dimension.new(pair=self.window.get_size())
-        self.top = self.screen_size.ratio_height(mul=1, div=11)
-        self.bottom = self.screen_size.ratio_height(mul=10, div=11)
+        self.top = self.screen_size.ratio_height(mul=1, div=19)
+        self.bottom = self.screen_size.ratio_height(mul=18, div=19)
         self.height = self.bottom - self.top
         # self.width = ratio(val=self.height, mul=0.531914893617)
         self.width = ratio(val=self.height, mul=0.631914893617)
@@ -198,13 +198,20 @@ class Ball(pygame.sprite.Sprite):
         super().__init__()
         self.window = window
         self.court = court
-        self.player = None
-        self.position = None
-        self.dimension = Dimension(width=25, height=25)
+        self.player_in_possession = None
+        self.image_file_path = f"D:/workspaces/python/github-projects/trikutta/first/images/basketball.png"
+        self.position = Position(x=self.court.left + self.court.dimension.ratio_width(div=2), y=self.court.top + self.court.dimension.ratio_height(div=2))
+        self.image = pygame.image.load(self.image_file_path).convert_alpha()
+        self.actual_image_dimensions = image_dimensions(image_file_path=self.image_file_path)
+        self.scaled_width = 30
+        self.scaled_height = ratio(val=self.scaled_width, mul=self.actual_image_dimensions[1], div=self.actual_image_dimensions[0])
+        self.scaled_dimension = Dimension(width=self.scaled_width, height=self.scaled_height)
+        self.scaled_image = pygame.transform.scale(self.image, self.scaled_dimension.get())
+        self.rect = self.image.get_rect()
     def update(self):
-        if self.position is None:
-            return
+        # if self.position is None: return
         # pygame.draw.circle(surface=self.window, color=self.)
+        self.window.blit(self.scaled_image, self.position.get())
         return
 class CourtArea:
     def __init__(self, position:Position, dimension:Dimension):
