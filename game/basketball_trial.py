@@ -199,7 +199,8 @@ class Ball(pygame.sprite.Sprite):
         self.window = window
         self.court = court
         self.player_in_possession = None
-        self.image_file_path = f"D:/workspaces/python/github-projects/trikutta/first/images/basketball.png"
+        # self.image_file_path = f"D:/workspaces/python/github-projects/trikutta/first/images/basketball.png"
+        self.image_file_path = f"../images/basketball.png"
         self.position = Position(x=self.court.left + self.court.dimension.ratio_width(div=2), y=self.court.top + self.court.dimension.ratio_height(div=2))
         self.image = pygame.image.load(self.image_file_path).convert_alpha()
         self.actual_image_dimensions = image_dimensions(image_file_path=self.image_file_path)
