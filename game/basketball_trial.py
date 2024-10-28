@@ -170,9 +170,10 @@ class BasketBallTrialGame:
         self.timer = pygame.time.Clock()
         # self.window:Surface = pygame.display.set_mode(self.SCREEN_SIZE)
         # self.window:Surface = pygame.display.set_mode((0, 0))
-        info = pygame.display.Info() # You have to call this before pygame.display.set_mode()
+        # You have to call this before pygame.display.set_mode()
+        info = pygame.display.Info()
         screen_width, screen_height = info.current_w,info.current_h
-        self.window:Surface = pygame.display.set_mode((screen_width, screen_height))
+        self.window:Surface = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
         self.game_running = True
     def run_game(self):
         court = Court(window=self.window)
