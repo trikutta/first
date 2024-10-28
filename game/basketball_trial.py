@@ -121,26 +121,19 @@ class Court(pygame.sprite.Sprite):
         pygame.draw.line(surface=self.window, color=self.marking_style.color, start_pos=outer_line_start.get(), end_pos=outer_line_end.get(), width=self.marking_style.width)
         return
     def draw_arcs(self, outer_line_left:int, outer_line_right:int, outer_line_height:int):
-        arc_start_x = self.left + outer_line_left
-        arc_start_y = self.top + outer_line_height
-        arc_end_x = self.left + outer_line_right
-        arc_end_y = self.top + outer_line_height
-        # boom = 500
-        # arc_end_x = boom
-        # arc_end_y = boom
-        arc_rect = (arc_start_x, arc_start_y, arc_end_x, arc_end_y)
-        start_angle = ARC_PI / 2
-        stop_angle = ARC_PI * 2
-        # arc_rect = (50, 50, 100, 100)
-        start_angle = ARC_PI + ((ARC_PI * 1)/ 4)
-        stop_angle = ARC_PI + ((ARC_PI * 3)/ 4)
-        arc_length = self.dimension.ratio_height(mul=14, div=50)
+        arc_rect_length = outer_line_height * 2
+        rect_width = outer_line_right - outer_line_left
+        arc_rect = (self.left + outer_line_left, self.top, rect_width, arc_rect_length)
         # pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=arc_rect, start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
-        pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=(50, 50, 100, 100), start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
-        pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=(50, 100, 100, 100), start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
-        pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=(arc_start_x, arc_start_y, outer_line_right, arc_length), start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
+        # pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=(50, 50, 100, 100), start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
+        # pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=(50, 100, 100, 100), start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
+        # pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=(arc_start_x, arc_start_y, rect_width, arc_length), start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
+        pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=arc_rect, start_angle=ARC_PI, stop_angle=ARC_PI * 2, width=self.marking_style.width)
         # pygame.draw.line(surface=self.window, color=self.marking_style.color, start_pos=(arc_start_x, arc_start_y), end_pos=(arc_end_x, arc_end_y), width=self.marking_style.width)
-        pygame.draw.rect(surface=self.window, color=self.marking_style.color, rect=(arc_start_x, arc_start_y, outer_line_right, arc_length), width=self.marking_style.width, border_radius=self.marking_style.radius)
+        # pygame.draw.rect(surface=self.window, color=self.marking_style.color, rect=(arc_start_x, arc_start_y, rect_width, arc_length), width=self.marking_style.width, border_radius=self.marking_style.radius)
+
+        arc_rect = (self.left + outer_line_left, self.bottom - arc_rect_length, rect_width, arc_rect_length)
+        pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=arc_rect, start_angle=0, stop_angle=ARC_PI, width=self.marking_style.width)
         return
     def draw_outer_lines(self):
         outer_line_height = self.dimension.ratio_height(mul=14, div=94)
