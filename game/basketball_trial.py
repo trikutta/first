@@ -7,14 +7,8 @@ from PIL import Image
 from pydantic import BaseModel
 from typing import List, Dict, Tuple, NamedTuple, TypeVar, Generic, Optional, Callable
 
-### ##### ###
-### UTILS ###
-### ##### ###
 def ratio(val:int, mul:int|float=1, div:int|float=1) -> int:
     return int((val * mul) / div)
-### ####### ###
-### CLASSES ###
-### ####### ###
 class Color:
     BLACK = (0, 0, 0)
     DARK_GREY = (25, 25, 25)
@@ -60,11 +54,11 @@ class Pixel:
     def update(self):
         pygame.draw.circle(self.screen, self.color, self.position.get(), self.size)
 class Player(pygame.sprite.Sprite):
-    def __init__(self, window:Surface, name:str, position:Position):
+    def __init__(self, window:Surface, name:str):
         super().__init__()
         self.window = window
         self.name = name
-        self.position = position
+        self.position = None
     def update(self):
         # if not self.game_area.contains(self.rect): self.kill()
         return
@@ -75,7 +69,7 @@ class SpriteStyle(BaseModel):
 class Court(pygame.sprite.Sprite):
     DEFAULT_COURT_STYLE = SpriteStyle(color=Color.VERY_LIGHT_ORANGE, width=0)
     DEFAULT_MARKING_STYLE = SpriteStyle(color=Color.LIGHT_GREY, width=2)
-    DEFAULT_BASKET_STYLE = SpriteStyle(color=Color.SEMI_RED, width=2)
+    DEFAULT_BASKET_STYLE = SpriteStyle(color=Color.SEMI_RED, width=4)
     # def __init__(self, window:Surface, court_style:Color=Color.VERY_LIGHT_ORANGE, marking_color:Color=Color.LIGHT_GREY, basket_color:Color=Color.SEMI_RED, border_width:int=1, border_radius:int=0, court_width:int=0, marking_width:int=2, marking_radius:int=0):
     def __init__(self, window:Surface, court_style:SpriteStyle=DEFAULT_COURT_STYLE, marking_style:SpriteStyle=DEFAULT_MARKING_STYLE, basket_style:SpriteStyle=DEFAULT_BASKET_STYLE):
         super().__init__()
@@ -111,6 +105,20 @@ class Court(pygame.sprite.Sprite):
         box_rect = [*box_position.get(), *box_dimension.get()]
         pygame.draw.rect(surface=self.window, color=self.marking_style.color, rect=box_rect, width=self.marking_style.width, border_radius=self.marking_style.radius)
         return
+    def draw_box_circle(self, center_y:int):
+        box_circle_radius = self.dimension.ratio_width(mul=6, div=50)
+        box_circle_position = Position(x=self.left + self.dimension.ratio_width(div=2), y=center_y)
+        pygame.draw.circle(surface=self.window, color=self.marking_style.color, center=box_circle_position.get(), radius=box_circle_radius, width=self.marking_style.width)
+        return
+    def draw_box_circles(self, box_height:int):
+        self.draw_box_circle(center_y=self.top + box_height)
+        self.draw_box_circle(center_y=self.bottom - box_height)
+        return
+    def draw_outer_lines(self):
+        outer_line_height = self.dimension.ratio_height(mul=14, div=94)
+        # start = Position(x=)
+        pygame.draw.line(surface=self.window, color=self.marking_style.color, start_pos=mid_line_start_position.get(), end_pos=mid_line_end_position.get(), width=self.marking_style.width)
+        return
     def draw_boxes(self):
         outer_width = self.dimension.ratio_width(mul=16, div=50)
         inner_width = self.dimension.ratio_width(mul=12, div=50)
@@ -119,6 +127,7 @@ class Court(pygame.sprite.Sprite):
         self.draw_box(box_width=inner_width, box_height=box_height, box_y=self.top)
         self.draw_box(box_width=outer_width, box_height=box_height, box_y=self.bottom - box_height)
         self.draw_box(box_width=inner_width, box_height=box_height, box_y=self.bottom - box_height)
+        self.draw_box_circles(box_height=box_height)
         return
     def draw_center_circle(self, mul:int=1, div:int=1):
         circle_radius = self.dimension.ratio_width(mul=mul, div=div)
@@ -151,6 +160,7 @@ class Court(pygame.sprite.Sprite):
         self.draw_center_circles()
         self.draw_baskets()
         return
+# class Player(pygame.sprite.Sprite):
 class BasketBallTrialGame:
     SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
     SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
