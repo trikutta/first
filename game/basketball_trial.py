@@ -54,15 +54,6 @@ class Pixel:
         self.size = size
     def update(self):
         pygame.draw.circle(self.screen, self.color, self.position.get(), self.size)
-class Player(pygame.sprite.Sprite):
-    def __init__(self, window:Surface, name:str):
-        super().__init__()
-        self.window = window
-        self.name = name
-        self.position = None
-    def update(self):
-        # if not self.game_area.contains(self.rect): self.kill()
-        return
 class SpriteStyle(BaseModel):
     color:Tuple[int, int, int]
     width:int
@@ -187,11 +178,36 @@ class Court(pygame.sprite.Sprite):
         self.draw_baskets()
         self.draw_outer_lines()
         return
-# class Player(pygame.sprite.Sprite):
+class Player(BaseModel):
+    name:str
+    image_file_path:str
+class Team(BaseModel):
+    name:str
+    players:List[Player]
+class InGamePlayer(pygame.sprite.Sprite):
+    def __init__(self, window:Surface, player:Player):
+        super().__init__()
+        self.window = window
+        self.player = player
+        self.position = None
+    def update(self):
+        # if not self.game_area.contains(self.rect): self.kill()
+        return
+class InGameTeam(pygame.sprite.Sprite):
+    def __init__(self, window:Surface, team:Team):
+        super().__init__()
+        self.window = window
+        self.team = team
+        self.position = None
+    def update(self):
+        # if not self.game_area.contains(self.rect): self.kill()
+        return
 class BasketBallTrialGame:
     SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
     SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
-    def __init__(self):
+    def __init__(self, home_team:Team, away_team:Team):
+        self.home_team = home_team
+        self.away_team = away_team
         pygame.init()
         pygame.display.set_caption('Basketball Trial')
         self.timer = pygame.time.Clock()
@@ -215,8 +231,8 @@ class BasketBallTrialGame:
             self.timer.tick(90)
         return
 def execute():
-    basketball_trial = BasketBallTrialGame()
-    basketball_trial.run_game()
+    # basketball_trial = BasketBallTrialGame()
+    #     # basketball_trial.run_game()
     return
 def main():
     execute()
