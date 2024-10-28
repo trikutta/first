@@ -1,4 +1,6 @@
 # Importing pygame module
+import random
+
 import pygame
 from pygame import Surface
 from bs4 import BeautifulSoup, Tag
@@ -84,10 +86,10 @@ class Court(pygame.sprite.Sprite):
         self.position = Position(x=self.left, y=self.top)
         self.dimension = Dimension(width=self.width, height=self.height)
         self.rect = [*self.position.get(), *self.dimension.get()]
-    def get_home_area(self) -> "Rect":
-        return Rect(position=Position(x=self.left, y=self.top), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
-    def get_away_area(self) -> "Rect":
-        return Rect(position=Position(x=self.left, y=self.top + self.dimension.ratio_height(div=2)), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
+    def get_home_area(self) -> "CourtArea":
+        return CourtArea(position=Position(x=self.left, y=self.top), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
+    def get_away_area(self) -> "CourtArea":
+        return CourtArea(position=Position(x=self.left, y=self.top + self.dimension.ratio_height(div=2)), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
     def draw_court(self):
         self.rect = [*self.position.get(), *self.dimension.get()]
         pygame.draw.rect(surface=self.window, color=self.court_style.color, rect=self.rect, width=self.court_style.width, border_radius=self.court_style.radius)
@@ -186,9 +188,14 @@ class Court(pygame.sprite.Sprite):
         self.draw_baskets()
         self.draw_outer_lines()
         return
-class Rect(BaseModel):
-    position:Position
-    dimension:Dimension
+class CourtArea:
+    def __init__(self, position:Position, dimension:Dimension):
+        self.position = position
+        self.dimension = dimension
+    def starting_position(self) -> Position:
+        x = random.randint(self.position.x, self.position.x + self.dimension.width)
+        y = random.randint(self.position.y, self.position.y + self.dimension.height)
+        return Position(x=x, y=y)
 class Player(BaseModel):
     name:str
     image_file_path:str
@@ -196,7 +203,7 @@ class Team(BaseModel):
     name:str
     players:List[Player]
 class InGamePlayer(pygame.sprite.Sprite):
-    def __init__(self, window:Surface, court:Court, player:Player, attack_area:Rect, defense_area:Rect):
+    def __init__(self, window:Surface, court:Court, player:Player, attack_area:CourtArea, defense_area:CourtArea):
         super().__init__()
         self.window = window
         self.court = court
@@ -204,16 +211,19 @@ class InGamePlayer(pygame.sprite.Sprite):
         self.attack_area = attack_area
         self.defense_area = defense_area
         self.position = None
-        self.image = pygame.image.load(filename=self.player.image_file_path).convert_alpha()
+        self.image = pygame.image.load(self.player.image_file_path).convert_alpha()
         self.actual_image_dimensions = image_dimensions(image_file_path=self.player.image_file_path)
-        self.scaled_dimensions = (50, ratio(val=50, mul=self.actual_image_dimensions[1], div=self.actual_image_dimensions[1]))
-        self.scaled_image = pygame.transform.scale(self.image, self.scaled_dimensions)
+        self.scaled_width = 75
+        self.scaled_height = ratio(val=self.scaled_width, mul=self.actual_image_dimensions[1], div=self.actual_image_dimensions[0])
+        self.scaled_dimension = Dimension(width=self.scaled_width, height=self.scaled_height)
+        self.scaled_image = pygame.transform.scale(self.image, self.scaled_dimension.get())
         self.rect = self.image.get_rect()
     def update(self):
         # if not self.game_area.contains(self.rect): self.kill()
-        self.position = None if self.position is None else self.position
-
-        self.window.blit(self.scaled_image, (0, 0))
+        self.position = self.defense_area.starting_position() if self.position is None else self.position
+        # print(f"updating {self.player.name} @ {self.position}")
+        # dime = self.scaled_image.get_rect(center=self.window.get_rect())
+        self.window.blit(self.scaled_image, self.position.get())
         return
 class InGameTeam(pygame.sprite.Sprite):
     def __init__(self, window:Surface, court:Court, team:Team, is_home:bool):
