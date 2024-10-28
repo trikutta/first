@@ -10,6 +10,10 @@ from typing import List, Dict, Tuple, NamedTuple, TypeVar, Generic, Optional, Ca
 ARC_PI = 3.14
 def ratio(val:int, mul:int|float=1, div:int|float=1) -> int:
     return int((val * mul) / div)
+def image_dimensions(image_file_path):
+    with Image.open(image_file_path) as image:
+        image_width, image_height = image.size
+    return image_width, image_height
 class Color:
     BLACK = (0, 0, 0)
     DARK_GREY = (25, 25, 25)
@@ -80,6 +84,10 @@ class Court(pygame.sprite.Sprite):
         self.position = Position(x=self.left, y=self.top)
         self.dimension = Dimension(width=self.width, height=self.height)
         self.rect = [*self.position.get(), *self.dimension.get()]
+    def get_home_area(self) -> "Rect":
+        return Rect(position=Position(x=self.left, y=self.top), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
+    def get_away_area(self) -> "Rect":
+        return Rect(position=Position(x=self.left, y=self.top + self.dimension.ratio_height(div=2)), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
     def draw_court(self):
         self.rect = [*self.position.get(), *self.dimension.get()]
         pygame.draw.rect(surface=self.window, color=self.court_style.color, rect=self.rect, width=self.court_style.width, border_radius=self.court_style.radius)
@@ -178,6 +186,9 @@ class Court(pygame.sprite.Sprite):
         self.draw_baskets()
         self.draw_outer_lines()
         return
+class Rect(BaseModel):
+    position:Position
+    dimension:Dimension
 class Player(BaseModel):
     name:str
     image_file_path:str
@@ -185,29 +196,45 @@ class Team(BaseModel):
     name:str
     players:List[Player]
 class InGamePlayer(pygame.sprite.Sprite):
-    def __init__(self, window:Surface, player:Player):
+    def __init__(self, window:Surface, court:Court, player:Player, attack_area:Rect, defense_area:Rect):
         super().__init__()
         self.window = window
+        self.court = court
         self.player = player
+        self.attack_area = attack_area
+        self.defense_area = defense_area
         self.position = None
+        self.image = pygame.image.load(filename=self.player.image_file_path).convert_alpha()
+        self.actual_image_dimensions = image_dimensions(image_file_path=self.player.image_file_path)
+        self.scaled_dimensions = (50, ratio(val=50, mul=self.actual_image_dimensions[1], div=self.actual_image_dimensions[1]))
+        self.scaled_image = pygame.transform.scale(self.image, self.scaled_dimensions)
+        self.rect = self.image.get_rect()
     def update(self):
         # if not self.game_area.contains(self.rect): self.kill()
+        self.position = None if self.position is None else self.position
+
+        self.window.blit(self.scaled_image, (0, 0))
         return
 class InGameTeam(pygame.sprite.Sprite):
-    def __init__(self, window:Surface, team:Team):
+    def __init__(self, window:Surface, court:Court, team:Team, is_home:bool):
         super().__init__()
         self.window = window
         self.team = team
-        self.position = None
+        self.court = court
+        self.is_home = is_home
+        court_home_area = court.get_home_area()
+        court_away_area = court.get_away_area()
+        self.attack_area = court_away_area if self.is_home else court_home_area
+        self.defense_area = court_away_area if self.is_home else court_home_area
+        self.players = [InGamePlayer(window=self.window, court=self.court, player=x, attack_area=self.attack_area, defense_area=self.defense_area) for x in team.players]
     def update(self):
         # if not self.game_area.contains(self.rect): self.kill()
+        [x.update() for x in self.players]
         return
 class BasketBallTrialGame:
     SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
     SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
     def __init__(self, home_team:Team, away_team:Team):
-        self.home_team = home_team
-        self.away_team = away_team
         pygame.init()
         pygame.display.set_caption('Basketball Trial')
         self.timer = pygame.time.Clock()
@@ -218,12 +245,14 @@ class BasketBallTrialGame:
         screen_width, screen_height = info.current_w,info.current_h
         self.window:Surface = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
         self.game_running = True
+        self.court = Court(window=self.window)
+        self.home_team = InGameTeam(window=self.window, court=self.court, team=home_team, is_home=True)
+        self.away_team = InGameTeam(window=self.window, court=self.court, team=away_team, is_home=False)
+        self.all_sprites = [self.court, self.home_team, self.away_team]
     def run_game(self):
-        court = Court(window=self.window)
-        all_sprites = [court]
         while self.game_running:
             self.window.fill(Color.DARK_GREY)
-            [x.update() for x in all_sprites]
+            [x.update() for x in self.all_sprites]
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                     self.game_running = False
@@ -232,7 +261,7 @@ class BasketBallTrialGame:
         return
 def execute():
     # basketball_trial = BasketBallTrialGame()
-    #     # basketball_trial.run_game()
+    # basketball_trial.run_game()
     return
 def main():
     execute()
