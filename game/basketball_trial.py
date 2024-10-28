@@ -1,6 +1,4 @@
-# Importing pygame module
 import random
-
 import pygame
 from pygame import Surface
 from bs4 import BeautifulSoup, Tag
@@ -86,35 +84,41 @@ class Court(pygame.sprite.Sprite):
         self.position = Position(x=self.left, y=self.top)
         self.dimension = Dimension(width=self.width, height=self.height)
         self.rect = [*self.position.get(), *self.dimension.get()]
+        self.count_rect = None
+        self.mid_line_rect = None
+        self.top_box_rect = None
+        self.bottom_box_rect = None
+        self.top_arc_rect = None
+        self.bottom_arc_rect = None
     def get_home_area(self) -> "CourtArea":
         return CourtArea(position=Position(x=self.left, y=self.top), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
     def get_away_area(self) -> "CourtArea":
         return CourtArea(position=Position(x=self.left, y=self.top + self.dimension.ratio_height(div=2)), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
     def draw_court(self):
         self.rect = [*self.position.get(), *self.dimension.get()]
-        pygame.draw.rect(surface=self.window, color=self.court_style.color, rect=self.rect, width=self.court_style.width, border_radius=self.court_style.radius)
+        self.count_rect = pygame.draw.rect(surface=self.window, color=self.court_style.color, rect=self.rect, width=self.court_style.width, border_radius=self.court_style.radius)
         return
     def draw_mid_line(self):
         half_height = self.top + self.dimension.ratio_height(div=2)
         mid_line_start_position = Position(x=self.left, y=half_height)
         mid_line_end_position = Position(x=self.right, y=half_height)
-        pygame.draw.line(surface=self.window, color=self.marking_style.color, start_pos=mid_line_start_position.get(), end_pos=mid_line_end_position.get(), width=self.marking_style.width)
+        self.mid_line_rect = pygame.draw.line(surface=self.window, color=self.marking_style.color, start_pos=mid_line_start_position.get(), end_pos=mid_line_end_position.get(), width=self.marking_style.width)
         return
     def draw_box(self, box_width:int, box_height:int, box_y:int):
         box_left = self.dimension.ratio_width(div=2) - ratio(val=box_width, div=2) + self.left
         box_position = Position(x=box_left, y=box_y)
         box_dimension = Dimension(width=box_width, height=box_height)
-        box_rect = [*box_position.get(), *box_dimension.get()]
-        pygame.draw.rect(surface=self.window, color=self.marking_style.color, rect=box_rect, width=self.marking_style.width, border_radius=self.marking_style.radius)
-        return
+        box_rect_area = [*box_position.get(), *box_dimension.get()]
+        box_rect = pygame.draw.rect(surface=self.window, color=self.marking_style.color, rect=box_rect_area, width=self.marking_style.width, border_radius=self.marking_style.radius)
+        return box_rect
     def draw_box_circle(self, center_y:int):
         box_circle_radius = self.dimension.ratio_width(mul=6, div=50)
         box_circle_position = Position(x=self.left + self.dimension.ratio_width(div=2), y=center_y)
-        pygame.draw.circle(surface=self.window, color=self.marking_style.color, center=box_circle_position.get(), radius=box_circle_radius, width=self.marking_style.width)
-        return
+        box_rect = pygame.draw.circle(surface=self.window, color=self.marking_style.color, center=box_circle_position.get(), radius=box_circle_radius, width=self.marking_style.width)
+        return box_rect
     def draw_box_circles(self, box_height:int):
-        self.draw_box_circle(center_y=self.top + box_height)
-        self.draw_box_circle(center_y=self.bottom - box_height)
+        self.top_box_rect = self.draw_box_circle(center_y=self.top + box_height)
+        self.bottom_box_rect = self.draw_box_circle(center_y=self.bottom - box_height)
         return
     def draw_outer_line(self, outer_line_left:int, outer_line_top:int, outer_line_height:int):
         outer_line_start = Position(x=self.left + outer_line_left, y=outer_line_top)
@@ -124,19 +128,20 @@ class Court(pygame.sprite.Sprite):
     def draw_arcs(self, outer_line_left:int, outer_line_right:int, outer_line_height:int):
         arc_rect_length = outer_line_height * 2
         rect_width = outer_line_right - outer_line_left
-        arc_rect = (self.left + outer_line_left, self.top, rect_width, arc_rect_length)
-        # pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=arc_rect, start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
+        arc_rect_area = (self.left + outer_line_left, self.top, rect_width, arc_rect_length)
+        # pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=arc_rect_area, start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
         # pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=(50, 50, 100, 100), start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
         # pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=(50, 100, 100, 100), start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
         # pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=(arc_start_x, arc_start_y, rect_width, arc_length), start_angle=start_angle, stop_angle=stop_angle, width=self.marking_style.width)
-        pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=arc_rect, start_angle=ARC_PI, stop_angle=ARC_PI * 2, width=self.marking_style.width)
+        self.top_arc_rect = pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=arc_rect_area, start_angle=ARC_PI, stop_angle=ARC_PI * 2, width=self.marking_style.width)
         # pygame.draw.line(surface=self.window, color=self.marking_style.color, start_pos=(arc_start_x, arc_start_y), end_pos=(arc_end_x, arc_end_y), width=self.marking_style.width)
         # pygame.draw.rect(surface=self.window, color=self.marking_style.color, rect=(arc_start_x, arc_start_y, rect_width, arc_length), width=self.marking_style.width, border_radius=self.marking_style.radius)
 
-        arc_rect = (self.left + outer_line_left, self.bottom - arc_rect_length, rect_width, arc_rect_length)
-        pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=arc_rect, start_angle=0, stop_angle=ARC_PI, width=self.marking_style.width)
+        arc_rect_area = (self.left + outer_line_left, self.bottom - arc_rect_length, rect_width, arc_rect_length)
+        self.bottom_arc_rect = pygame.draw.arc(surface=self.window, color=self.marking_style.color, rect=arc_rect_area, start_angle=0, stop_angle=ARC_PI, width=self.marking_style.width)
+        # self.bottom_arc_rect = pygame.draw.arc(surface=self.window, color=(50, 100, 200), rect=arc_rect_area, start_angle=0, stop_angle=ARC_PI, width=0)
         return
-    def draw_outer_lines(self):
+    def draw_mid_range(self):
         outer_line_height = self.dimension.ratio_height(mul=14, div=94)
         outer_line_left = self.dimension.ratio_width(mul=3, div=50)
         outer_line_right = self.dimension.ratio_width(mul=47, div=50)
@@ -186,7 +191,7 @@ class Court(pygame.sprite.Sprite):
         self.draw_boxes()
         self.draw_center_circles()
         self.draw_baskets()
-        self.draw_outer_lines()
+        self.draw_mid_range()
         return
 class CourtArea:
     def __init__(self, position:Position, dimension:Dimension):
@@ -278,6 +283,7 @@ def main():
     return
 if __name__ == "__main__":
     main()
+
 
 
 
