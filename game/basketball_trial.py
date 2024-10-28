@@ -1,5 +1,6 @@
 import random
 import pygame
+from enum import Enum
 from pygame import Surface
 from bs4 import BeautifulSoup, Tag
 from flask import Flask, jsonify, request, send_file, Response, render_template, make_response, url_for, session
@@ -74,8 +75,9 @@ class Court(pygame.sprite.Sprite):
         self.marking_style = marking_style
         self.basket_style = basket_style
         self.screen_size = Dimension.new(pair=self.window.get_size())
-        self.top = self.screen_size.ratio_height(mul=1, div=19)
-        self.bottom = self.screen_size.ratio_height(mul=18, div=19)
+        self.court_scale_by = 29
+        self.top = self.screen_size.ratio_height(mul=1, div=self.court_scale_by)
+        self.bottom = self.screen_size.ratio_height(mul=self.court_scale_by - 1, div=self.court_scale_by)
         self.height = self.bottom - self.top
         # self.width = ratio(val=self.height, mul=0.531914893617)
         self.width = ratio(val=self.height, mul=0.631914893617)
@@ -193,13 +195,20 @@ class Court(pygame.sprite.Sprite):
         self.draw_baskets()
         self.draw_mid_range()
         return
+class CourtArea:
+    def __init__(self, position:Position, dimension:Dimension):
+        self.position = position
+        self.dimension = dimension
+    def starting_position(self, player:"InGamePlayer") -> Position:
+        x = random.randint(self.position.x, self.position.x + self.dimension.width - player.scaled_dimension.width)
+        y = random.randint(self.position.y, self.position.y + self.dimension.height - player.scaled_dimension.height)
+        return Position(x=x, y=y)
 class Ball(pygame.sprite.Sprite):
     def __init__(self, window:Surface, court:Court):
         super().__init__()
         self.window = window
         self.court = court
         self.player_in_possession = None
-        # self.image_file_path = f"D:/workspaces/python/github-projects/trikutta/first/images/basketball.png"
         self.image_file_path = f"../images/basketball.png"
         self.position = Position(x=self.court.left + self.court.dimension.ratio_width(div=2), y=self.court.top + self.court.dimension.ratio_height(div=2))
         self.image = pygame.image.load(self.image_file_path).convert_alpha()
@@ -209,27 +218,38 @@ class Ball(pygame.sprite.Sprite):
         self.scaled_dimension = Dimension(width=self.scaled_width, height=self.scaled_height)
         self.scaled_image = pygame.transform.scale(self.image, self.scaled_dimension.get())
         self.rect = self.image.get_rect()
+    def is_in_possession(self):
+        return self.player_in_possession != None
     def update(self):
         # if self.position is None: return
         # pygame.draw.circle(surface=self.window, color=self.)
         self.window.blit(self.scaled_image, self.position.get())
         return
-class CourtArea:
-    def __init__(self, position:Position, dimension:Dimension):
-        self.position = position
-        self.dimension = dimension
-    def starting_position(self, player:"InGamePlayer") -> Position:
-        x = random.randint(self.position.x, self.position.x + self.dimension.width - player.scaled_dimension.width)
-        y = random.randint(self.position.y, self.position.y + self.dimension.height - player.scaled_dimension.height)
-        return Position(x=x, y=y)
+class PlayerPosition(Enum):
+    GUARD = 1
+    FORWARD = 2
+    CENTER = 3
 class Player(BaseModel):
     name:str
     image_file_path:str
+    position:PlayerPosition
 class Team(BaseModel):
     name:str
     players:List[Player]
+class Strategy:
+    def __init__(self, court:Court, ball:Ball, team:"InGameTeam"):
+        self.court = court
+        self.ball = ball
+        self.team = team
+    def execute(self):
+        pass
+class LooseBall(Strategy):
+    def __init__(self, court:Court, ball:Ball, team:"InGameTeam"):
+        super().__init__(court=court, ball=ball, team=team)
+    def execute(self):
+        return
 class InGamePlayer(pygame.sprite.Sprite):
-    def __init__(self, window:Surface, court:Court, player:Player, attack_area:CourtArea, defense_area:CourtArea):
+    def __init__(self, window:Surface, court:Court, player:Player, ball:Ball, attack_area:CourtArea, defense_area:CourtArea):
         super().__init__()
         self.window = window
         self.court = court
@@ -252,20 +272,28 @@ class InGamePlayer(pygame.sprite.Sprite):
         self.window.blit(self.scaled_image, self.position.get())
         return
 class InGameTeam(pygame.sprite.Sprite):
-    def __init__(self, window:Surface, court:Court, team:Team, is_home:bool):
+    def __init__(self, window:Surface, court:Court, ball:Ball, team:Team, is_home:bool):
         super().__init__()
         self.window = window
         self.team = team
         self.court = court
+        self.ball = ball
         self.is_home = is_home
         court_home_area = court.get_home_area()
         court_away_area = court.get_away_area()
         self.attack_area = court_away_area if self.is_home else court_home_area
         self.defense_area = court_away_area if self.is_home else court_home_area
-        self.players = [InGamePlayer(window=self.window, court=self.court, player=x, attack_area=self.attack_area, defense_area=self.defense_area) for x in team.players]
+        self.players = [InGamePlayer(window=self.window, court=self.court, ball=self.ball, player=x, attack_area=self.attack_area, defense_area=self.defense_area) for x in team.players]
+        self.player_sprites = pygame.sprite.Group(*self.players)
     def update(self):
         # if not self.game_area.contains(self.rect): self.kill()
-        [x.update() for x in self.players]
+        # [x.update() for x in self.players]
+
+        ### ### ###
+        #if self.ball.is_in_possession():
+        ### ### ###
+
+        self.player_sprites.update()
         return
 class BasketBallTrialGame:
     SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
@@ -282,15 +310,16 @@ class BasketBallTrialGame:
         self.window:Surface = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
         self.game_running = True
         self.court = Court(window=self.window)
-        self.home_team = InGameTeam(window=self.window, court=self.court, team=home_team, is_home=True)
-        self.away_team = InGameTeam(window=self.window, court=self.court, team=away_team, is_home=False)
         self.ball = Ball(window=self.window, court=self.court)
+        self.home_team = InGameTeam(window=self.window, court=self.court, ball=self.ball, team=home_team, is_home=True)
+        self.away_team = InGameTeam(window=self.window, court=self.court, ball=self.ball, team=away_team, is_home=False)
         # self.all_sprites = [self.court, self.home_team, self.away_team]
-        self.all_sprites = pygame.sprite.Group(self.court, self.home_team, self.away_team, self.ball)
+        self.all_sprites = pygame.sprite.Group(self.court, self.ball, self.home_team, self.away_team)
     def run_game(self):
         while self.game_running:
             self.window.fill(Color.DARK_GREY)
-            [x.update() for x in self.all_sprites]
+            # [x.update() for x in self.all_sprites]
+            self.all_sprites.update()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                     self.game_running = False
