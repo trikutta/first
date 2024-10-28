@@ -193,13 +193,26 @@ class Court(pygame.sprite.Sprite):
         self.draw_baskets()
         self.draw_mid_range()
         return
+class Ball(pygame.sprite.Sprite):
+    def __init__(self, window:Surface, court:Court):
+        super().__init__()
+        self.window = window
+        self.court = court
+        self.player = None
+        self.position = None
+        self.dimension = Dimension(width=25, height=25)
+    def update(self):
+        if self.position is None:
+            return
+        # pygame.draw.circle(surface=self.window, color=self.)
+        return
 class CourtArea:
     def __init__(self, position:Position, dimension:Dimension):
         self.position = position
         self.dimension = dimension
-    def starting_position(self) -> Position:
-        x = random.randint(self.position.x, self.position.x + self.dimension.width)
-        y = random.randint(self.position.y, self.position.y + self.dimension.height)
+    def starting_position(self, player:"InGamePlayer") -> Position:
+        x = random.randint(self.position.x, self.position.x + self.dimension.width - player.scaled_dimension.width)
+        y = random.randint(self.position.y, self.position.y + self.dimension.height - player.scaled_dimension.height)
         return Position(x=x, y=y)
 class Player(BaseModel):
     name:str
@@ -225,7 +238,7 @@ class InGamePlayer(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
     def update(self):
         # if not self.game_area.contains(self.rect): self.kill()
-        self.position = self.defense_area.starting_position() if self.position is None else self.position
+        self.position = self.defense_area.starting_position(self) if self.position is None else self.position
         # print(f"updating {self.player.name} @ {self.position}")
         # dime = self.scaled_image.get_rect(center=self.window.get_rect())
         self.window.blit(self.scaled_image, self.position.get())
@@ -263,7 +276,9 @@ class BasketBallTrialGame:
         self.court = Court(window=self.window)
         self.home_team = InGameTeam(window=self.window, court=self.court, team=home_team, is_home=True)
         self.away_team = InGameTeam(window=self.window, court=self.court, team=away_team, is_home=False)
-        self.all_sprites = [self.court, self.home_team, self.away_team]
+        self.ball = Ball(window=self.window, court=self.court)
+        # self.all_sprites = [self.court, self.home_team, self.away_team]
+        self.all_sprites = pygame.sprite.Group(self.court, self.home_team, self.away_team, self.ball)
     def run_game(self):
         while self.game_running:
             self.window.fill(Color.DARK_GREY)
