@@ -34,6 +34,9 @@ class Dimension:
         return ratio(val=self.width, mul=mul, div=div)
     def ratio_height(self, mul:int|float=1, div:int|float=1) -> int:
         return ratio(val=self.height, mul=mul, div=div)
+    @classmethod
+    def copy(cls, dimension:"Dimension"):
+        return cls.new(pair=dimension.get())
 class Position:
     def __init__(self, x:int, y:int):
         self.x = x
@@ -47,6 +50,9 @@ class Position:
         return ratio(val=self.x, mul=mul, div=div)
     def ratio_y(self, mul:int|float=1, div:int|float=1) -> int:
         return ratio(val=self.y, mul=mul, div=div)
+    @classmethod
+    def copy(cls, position:"Position"):
+        return cls.new(pair=position.get())
 class Pixel:
     def __init__(self, screen:Surface, color:Tuple[int, int, int], position:Position, size:int=1):
         self.screen = screen
