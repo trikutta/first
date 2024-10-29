@@ -11,6 +11,8 @@ def image_dimensions(image_file_path):
     with Image.open(image_file_path) as image:
         image_width, image_height = image.size
     return image_width, image_height
+def find_trend(val) -> int:
+    return 0 if val == 0 else int(val / abs(val))
 class Color:
     BLACK = (0, 0, 0)
     DARK_GREY = (25, 25, 25)
