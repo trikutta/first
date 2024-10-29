@@ -7,7 +7,7 @@ from flask import Flask, jsonify, request, send_file, Response, render_template,
 from PIL import Image
 from game.entities import Player, Team, Ball, InGamePlayer, InGameTeam, PlayerPosition, Strategy, LooseBall
 from game.court import Court, CourtArea
-from game.utils import ARC_PI, Color, Position, Dimension, Pixel, SpriteStyle, ratio, image_dimensions
+from game.utils import ARC_PI, Color, Position, Dimension, Pixel, SpriteStyle, ratio, image_dimensions, find_trend
 from pydantic import BaseModel
 from typing import List, Dict, Tuple, NamedTuple, TypeVar, Generic, Optional, Callable
 

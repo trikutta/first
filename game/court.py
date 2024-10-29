@@ -4,7 +4,7 @@ from PIL import Image
 from pydantic import BaseModel
 from pygame import Surface
 from typing import List, Dict, NamedTuple, Tuple, Optional
-from game.utils import ARC_PI, Color, Position, Dimension, Pixel, SpriteStyle, ratio, image_dimensions
+from game.utils import ARC_PI, Color, Position, Dimension, Pixel, SpriteStyle, ratio, image_dimensions, find_trend
 
 class CourtArea:
     def __init__(self, position:Position, dimension:Dimension):
