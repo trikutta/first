@@ -1,12 +1,14 @@
 
 
-def check_string(val:str):
-    return
+class Solution:
+    def lengthOfLongestSubstring(self, s: str) -> int:
+        return
 def check_strings():
     strings = [
         "abcxabc"
     ]
-    [check_string(val=x) for x in strings]
+    solution = Solution()
+    [solution.lengthOfLongestSubstring(s=x) for x in strings]
     return
 def main():
     check_strings()
