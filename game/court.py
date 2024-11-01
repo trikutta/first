@@ -10,7 +10,7 @@ class CourtArea:
     def __init__(self, position:Position, dimension:Dimension):
         self.position = position
         self.dimension = dimension
-    def starting_position(self, player_width:int, player_height:int) -> Position:
+    def random_position(self, player_width:int, player_height:int) -> Position:
         x = random.randint(self.position.x, self.position.x + self.dimension.width - player_width)
         y = random.randint(self.position.y, self.position.y + self.dimension.height - player_height)
         return Position(x=x, y=y)
@@ -47,6 +47,8 @@ class Court(pygame.sprite.Sprite):
         return CourtArea(position=Position(x=self.left, y=self.top), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
     def get_away_area(self) -> "CourtArea":
         return CourtArea(position=Position(x=self.left, y=self.top + self.dimension.ratio_height(div=2)), dimension=Dimension(width=self.dimension.width, height=self.dimension.ratio_height(div=2)))
+    def get_perimeter_positions(self):
+        return
     def draw_court(self):
         self.rect = [*self.position.get(), *self.dimension.get()]
         self.count_rect = pygame.draw.rect(surface=self.window, color=self.court_style.color, rect=self.rect, width=self.court_style.width, border_radius=self.court_style.radius)
